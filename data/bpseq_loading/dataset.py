@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import os
-
+from tokenizer import Tokenizer
 
 def parse_bpseq_file(filename: str):
 
@@ -85,13 +85,9 @@ class BPSeqDataset(Dataset):
                 for i in range(len(sequence),LONGEST_SEQUENCE):
                     padded_sequence += "P" # P is used as padding
 
-                embedding_array = []
-                lookup = {"A":0,"C":1,"G":2,"U":3,"N":4,"P":5}
+                tokenizer = Tokenizer()
+                embedding_array = tokenizer.embedd(padded_sequence)
 
-                for nucleotide in padded_sequence:
-                    embedding_array.append(lookup[nucleotide])
-
-                embedding_array = np.array(embedding_array)
                 self.sequences.append(embedding_array)
 
 
