@@ -64,12 +64,35 @@ class BPSeqDataset(Dataset):
         self.matrices = []
         self.sequences = []
 
+        LONGEST_SEQUENCE = 4381 #this we know from EDA
+        
+        #loading initial matrices
         for filename in os.listdir(self.directory_path):
             file_path = os.path.join(self.directory_path, filename)
             if os.path.isfile(file_path):
+
                 matrix,sequence = parse_bpseq_file(file_path)
-                self.matrices.append(matrix)
-                self.sequences.append(sequence)
+
+                #padding
+                padded_matrix = np.zeros((LONGEST_SEQUENCE,LONGEST_SEQUENCE),dtype=int)
+                matrix_size = matrix.shape[0]
+                padded_matrix[:matrix_size,:matrix_size] = matrix
+
+                self.matrices.append(padded_matrix)
+
+                padded_sequence = sequence
+
+                for i in range(len(sequence),LONGEST_SEQUENCE):
+                    padded_sequence += "P" # P is used as padding
+
+                embedding_array = []
+                lookup = {"A":0,"C":1,"G":2,"U":3,"N":4,"P":5}
+
+                for nucleotide in padded_sequence:
+                    embedding_array.append(lookup[nucleotide])
+
+                self.sequences.append(embedding_array)
+
 
     def __len__(self):
 
