@@ -91,6 +91,7 @@ class BPSeqDataset(Dataset):
                 for nucleotide in padded_sequence:
                     embedding_array.append(lookup[nucleotide])
 
+                embedding_array = np.array(embedding_array)
                 self.sequences.append(embedding_array)
 
 
