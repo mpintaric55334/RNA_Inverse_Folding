@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 import numpy as np
 import os
-from tokenizer import Tokenizer
+from data.bpseq_loading.tokenizer import Tokenizer
 
 def parse_bpseq_file(filename: str):
 
@@ -44,7 +44,7 @@ def parse_bpseq_file(filename: str):
                     pairs.append([pos,paired_pos])
 
     length = len(sequence)
-    matrix = np.zeros((length,length),dtype=int)
+    matrix = np.zeros((length,length),dtype=float)
     for pair_index1, pair_index2 in pairs:
         matrix[pair_index1][pair_index2] = 1
     
@@ -78,10 +78,11 @@ class BPSeqDataset(Dataset):
                     continue
 
                 #padding
-                padded_matrix = np.zeros((LONGEST_SEQUENCE,LONGEST_SEQUENCE),dtype=int)
+                padded_matrix = np.zeros((LONGEST_SEQUENCE,LONGEST_SEQUENCE),dtype=float)
                 matrix_size = matrix.shape[0]
                 padded_matrix[:matrix_size,:matrix_size] = matrix
 
+                padded_matrix = padded_matrix.reshape(1, 512, 512) #add channel for convolution
                 self.matrices.append(padded_matrix)
 
                 padded_sequence = sequence
