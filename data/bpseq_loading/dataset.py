@@ -63,8 +63,9 @@ class BPSeqDataset(Dataset):
         self.directory_path = directory_path
         self.matrices = []
         self.sequences = []
+        self.masks = []
 
-        LONGEST_SEQUENCE = 4381 #this we know from EDA
+        LONGEST_SEQUENCE = 512 #decided for computation purposes
         
         #loading initial matrices
         for filename in os.listdir(self.directory_path):
@@ -72,6 +73,9 @@ class BPSeqDataset(Dataset):
             if os.path.isfile(file_path):
 
                 matrix,sequence = parse_bpseq_file(file_path)
+                
+                if len(sequence) > 512:
+                    continue
 
                 #padding
                 padded_matrix = np.zeros((LONGEST_SEQUENCE,LONGEST_SEQUENCE),dtype=int)
@@ -90,6 +94,18 @@ class BPSeqDataset(Dataset):
 
                 self.sequences.append(embedding_array)
 
+                mask = []
+                for element in embedding_array:
+                    if element!=4: #token for N
+                        mask.append(1)
+                    else:
+                        mask.append(0)
+                mask = np.array(mask)
+
+                self.masks.append(mask)
+
+
+
 
     def __len__(self):
 
@@ -97,4 +113,4 @@ class BPSeqDataset(Dataset):
 
     def __getitem__(self,idx):
 
-        return self.matrices[idx],self.sequences[idx]
+        return self.matrices[idx],self.sequences[idx],self.masks[idx]
