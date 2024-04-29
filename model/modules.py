@@ -33,6 +33,7 @@ class ResNetLayer(nn.Module):
         x_input = x
         x = self.relu1(self.batchnorm1(self.conv1(x)))
         x = self.relu2(self.batchnorm2(self.conv2(x)))
+        x = x + x_input
         return x
 
 class ResNetBlock(nn.Module):
