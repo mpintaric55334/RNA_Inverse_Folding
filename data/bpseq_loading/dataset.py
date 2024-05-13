@@ -4,6 +4,7 @@ import numpy as np
 import os
 from data.bpseq_loading.tokenizer import Tokenizer
 
+
 def parse_bpseq_file(filename: str):
 
     """
@@ -22,34 +23,30 @@ def parse_bpseq_file(filename: str):
         pairs = []
 
         for line in file:
-            if "#" in line: 
+            if "#" in line:
                 continue
             stripped_line = line.strip().split()
 
-            if len(stripped_line) == 3:  #Position, nucleotide, paired position
+            if len(stripped_line) == 3:  # Position, nucleotide,paired position
                 pos, nucleotide, paired_pos = stripped_line
-                pos,paired_pos = int(pos)-1, int(paired_pos)-1 #-1 is because bpseq start index counting from 1
+                pos, paired_pos = int(pos)-1, int(paired_pos) - 1  # -1 is because bpseq start index counting from 1
 
-                nucleotide = nucleotide.upper()
-                
+                nucleotide = nucleotide.upper()              
                 if nucleotide not in "ACGU":
                     if nucleotide == "T":
                         nucleotide = "U"
                     else:
                         nucleotide = "N"
-                
                 sequence += nucleotide
 
-                if(paired_pos != -1):
-                    pairs.append([pos,paired_pos])
+                if (paired_pos != -1):
+                    pairs.append([pos, paired_pos])
 
     length = len(sequence)
-    matrix = np.zeros((length,length),dtype=float)
+    matrix = np.zeros((length, length), dtype=float)
     for pair_index1, pair_index2 in pairs:
         matrix[pair_index1][pair_index2] = 1
-    
     return matrix, sequence
-
 
 
 class BPSeqDataset(Dataset):
@@ -59,36 +56,37 @@ class BPSeqDataset(Dataset):
 
     """
 
-    def __init__(self,directory_path: str):
+    def __init__(self, directory_path: str):
         self.directory_path = directory_path
         self.matrices = []
         self.sequences = []
         self.masks = []
 
-        LONGEST_SEQUENCE = 512 #decided for computation purposes
+        LONGEST_SEQUENCE = 512  # decided for computation purposes
         
-        #loading initial matrices
+        # loading initial matrices
         for filename in os.listdir(self.directory_path):
             file_path = os.path.join(self.directory_path, filename)
             if os.path.isfile(file_path):
 
-                matrix,sequence = parse_bpseq_file(file_path)
+                matrix, sequence = parse_bpseq_file(file_path)
                 
                 if len(sequence) > 512:
                     continue
 
-                #padding
-                padded_matrix = np.zeros((LONGEST_SEQUENCE,LONGEST_SEQUENCE),dtype=float)
+                # padding
+                padded_matrix = np.zeros((LONGEST_SEQUENCE, LONGEST_SEQUENCE),
+                                         dtype=float)
                 matrix_size = matrix.shape[0]
-                padded_matrix[:matrix_size,:matrix_size] = matrix
+                padded_matrix[:matrix_size, :matrix_size] = matrix
 
-                padded_matrix = padded_matrix.reshape(1, 512, 512) #add channel for convolution
+                padded_matrix = padded_matrix.reshape(1, 512, 512)  # add channel for convolution
                 self.matrices.append(padded_matrix)
 
                 padded_sequence = sequence
 
                 for i in range(len(sequence),LONGEST_SEQUENCE):
-                    padded_sequence += "P" # P is used as padding
+                    padded_sequence += "P"  # P is used as padding
 
                 tokenizer = Tokenizer()
                 embedding_array = tokenizer.embedd(padded_sequence)
@@ -97,7 +95,7 @@ class BPSeqDataset(Dataset):
 
                 mask = []
                 for element in embedding_array:
-                    if element!=4: #token for N
+                    if element != 4:  # token for N
                         mask.append(1)
                     else:
                         mask.append(0)
@@ -105,13 +103,10 @@ class BPSeqDataset(Dataset):
 
                 self.masks.append(mask)
 
-
-
-
     def __len__(self):
 
         return len(self.matrices)
 
-    def __getitem__(self,idx):
+    def __getitem__(self, idx):
 
-        return self.matrices[idx],self.sequences[idx],self.masks[idx]
+        return self.matrices[idx], self.sequences[idx], self.masks[idx]
