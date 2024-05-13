@@ -8,7 +8,7 @@ class RNAModel(nn.Module):
     def __init__(self, batch_size, matrix_shape: int = 512):
         
         super(RNAModel, self).__init__()
-        self.encoder = Encoder()
+        self.encoder = Encoder(matrix_shape)
         self.decoder = DecoderLSTM(batch_size)
         self.batch_size = batch_size
 
@@ -17,5 +17,3 @@ class RNAModel(nn.Module):
         encoded = torch.reshape(encoded, (1, self.batch_size, 128))
         x = self.decoder(sequences, encoded)
         return x
-
-

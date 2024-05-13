@@ -125,7 +125,7 @@ class Encoder(nn.Module):
         for block in self.blocks:
             x = block(x)
         return x
-    
+   
 
 class DecoderLSTM(nn.Module):
     def __init__(self, batch_size):

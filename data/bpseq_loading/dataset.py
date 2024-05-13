@@ -43,7 +43,7 @@ def parse_bpseq_file(filename: str):
                     pairs.append([pos, paired_pos])
 
     length = len(sequence)
-    matrix = np.zeros((length, length), dtype=float)
+    matrix = torch.zeros((length, length), dtype=torch.float32)
     for pair_index1, pair_index2 in pairs:
         matrix[pair_index1][pair_index2] = 1
     return matrix, sequence
@@ -56,13 +56,13 @@ class BPSeqDataset(Dataset):
 
     """
 
-    def __init__(self, directory_path: str):
+    def __init__(self, directory_path: str, cuttof_size: int = 256):
         self.directory_path = directory_path
         self.matrices = []
         self.sequences = []
         self.masks = []
 
-        LONGEST_SEQUENCE = 512  # decided for computation purposes
+        LONGEST_SEQUENCE = cuttof_size  # decided for computation purposes
         
         # loading initial matrices
         for filename in os.listdir(self.directory_path):
@@ -71,21 +71,23 @@ class BPSeqDataset(Dataset):
 
                 matrix, sequence = parse_bpseq_file(file_path)
                 
-                if len(sequence) > 512:
+                if len(sequence) > LONGEST_SEQUENCE:
                     continue
 
                 # padding
-                padded_matrix = np.zeros((LONGEST_SEQUENCE, LONGEST_SEQUENCE),
-                                         dtype=float)
+                padded_matrix = torch.zeros((LONGEST_SEQUENCE,
+                                             LONGEST_SEQUENCE),
+                                            dtype=torch.float32)
                 matrix_size = matrix.shape[0]
                 padded_matrix[:matrix_size, :matrix_size] = matrix
 
-                padded_matrix = padded_matrix.reshape(1, 512, 512)  # add channel for convolution
+                padded_matrix = padded_matrix.reshape(1, LONGEST_SEQUENCE,
+                                                      LONGEST_SEQUENCE)  # add channel for convolution
                 self.matrices.append(padded_matrix)
 
                 padded_sequence = sequence
 
-                for i in range(len(sequence),LONGEST_SEQUENCE):
+                for i in range(len(sequence), LONGEST_SEQUENCE):
                     padded_sequence += "P"  # P is used as padding
 
                 tokenizer = Tokenizer()
