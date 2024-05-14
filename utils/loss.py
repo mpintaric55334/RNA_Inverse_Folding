@@ -12,10 +12,14 @@ class Loss:
 
         # reshaping so loss is easily calculable
         masks = masks.reshape(-1)
+
+        predictions = predictions[:, :-1, :]  # remove last element because its EOS
         predictions = predictions.reshape(-1, predictions.shape[2])
+
+        true_sequence = true_sequence[:, 1:]  # remove first element <s>
+        true_sequence = true_sequence - 1
         true_sequence = true_sequence.reshape(-1)
 
-        true_sequence = true_sequence
         loss = self.criterion(predictions, true_sequence)
 
         loss = loss * masks  # element wise for masking N

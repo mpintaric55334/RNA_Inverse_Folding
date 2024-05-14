@@ -4,10 +4,11 @@ import numpy as np
 class Tokenizer:
 
     def __init__(self):
-        self.lookup = {"A": 0, "C": 1, "G": 2, "U": 3, "N": 4, "P": 5}
+        # start_token = 0
+        self.lookup = {"A": 1, "C": 2, "G": 3, "U": 4, "N": 5, "P": 6}
 
     def embedd(self, sequence):
-        embedding_array = np.array([], dtype=int)
+        embedding_array = np.array([0], dtype=int)  # include start token
 
         for nucleotide in sequence:
             embedding_array = np.append(embedding_array,

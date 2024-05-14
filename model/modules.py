@@ -111,7 +111,7 @@ class Encoder(nn.Module):
     def __init__(self, matrix_shape: int = 512):
         
         super(Encoder, self).__init__()
-        self.blocks = []
+        self.blocks = nn.ModuleList()
         for i in range(5):
             self.blocks.append(ResNetBlock(in_channels=2**i,
                                            out_channels=2**(i+1),
@@ -132,11 +132,13 @@ class DecoderLSTM(nn.Module):
         super(DecoderLSTM, self).__init__()
         self.lstm = nn.LSTM(input_size=20, hidden_size=128, batch_first=True)
         self.h0 = torch.zeros((1, batch_size, 128))
-        self.fc = nn.Linear(128, 6)
-        self.embedding = nn.Embedding(6, 20)
+        self.fc = nn.Linear(128, 6)  # hidden_size, class number
+        self.embedding = nn.Embedding(7, 20)
 
     def forward(self, inputs, c0):
         embeddings = self.embedding(inputs.long())
+        device = inputs.device  # ensure compatibility of devices
+        self.h0 = self.h0.to(device)
         hiddens, _ = self.lstm(embeddings, (self.h0, c0))
         outputs = torch.softmax(self.fc(hiddens), dim=2)
         return outputs

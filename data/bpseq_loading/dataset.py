@@ -74,6 +74,15 @@ class BPSeqDataset(Dataset):
                 if len(sequence) > LONGEST_SEQUENCE:
                     continue
 
+                # remove all sequences with N > 30% of sequence
+                N_count = 0
+
+                for nucleotide in sequence:
+                    if nucleotide == "N":
+                        N_count += 1
+                if N_count > len(sequence) * 0.3:
+                    continue
+                
                 # padding
                 padded_matrix = torch.zeros((LONGEST_SEQUENCE,
                                              LONGEST_SEQUENCE),
@@ -87,7 +96,7 @@ class BPSeqDataset(Dataset):
 
                 padded_sequence = sequence
 
-                for i in range(len(sequence), LONGEST_SEQUENCE):
+                for _ in range(len(sequence), LONGEST_SEQUENCE):
                     padded_sequence += "P"  # P is used as padding
 
                 tokenizer = Tokenizer()
@@ -97,10 +106,12 @@ class BPSeqDataset(Dataset):
 
                 mask = []
                 for element in embedding_array:
-                    if element != 4:  # token for N
+                    if element != 5:  # token for N
                         mask.append(1)
                     else:
                         mask.append(0)
+
+                mask = mask[1:]  # first element is unimportant, since its start token
                 mask = np.array(mask)
 
                 self.masks.append(mask)
