@@ -16,28 +16,38 @@ def evaluate(model, testloader, device="cpu"):
     model.eval()
     matches = 0
     total_nucleotides = 0
+
+    matches_non_padded = 0
+    total_non_padded = 0
     for matrices, sequences, masks in testloader:
 
         matrices = matrices.to(device)
         sequences = sequences.to(device)
         masks = masks.to(device)
-        next_tokens = torch.zeros((sequences.shape[0], 1)).to(device)
-        predicted_sequences = torch.zeros((sequences.shape[0], 1)).to(device)
-
-        for _ in range(1, sequences.shape[1]):
-            outputs = model(matrices, next_tokens)
+        next_tokens = torch.zeros((sequences.shape[0], 1), device=device)
+        predicted_sequences = torch.zeros((sequences.shape[0],
+                                           sequences.shape[1]), device=device)
+        for idx in range(1, sequences.shape[1]):
+            outputs = model.infer(matrices, next_tokens)
+            device = outputs.device
             next_tokens = outputs.argmax(dim=2) + 1   # start token masking
             next_tokens = next_tokens.to(device)
-            predicted_sequences = torch.cat((predicted_sequences, next_tokens),
-                                            dim=1)
-            predicted_sequences = predicted_sequences.to(device)
+            predicted_sequences[:, idx] = next_tokens.squeeze(1)
 
+        model.reset_states()
         predicted_sequences = predicted_sequences.long()
         matches += (sequences == predicted_sequences).sum().item()
         total_nucleotides += sequences.shape[0] * sequences.shape[1]
+
+        mask = (sequences != 6)
+        matches_non_padded += ((sequences == predicted_sequences) & mask).sum().item()
+        total_non_padded += mask.sum().item()
+    print(predicted_sequences[0])
+    print(sequences[0])
     accuracy = matches/total_nucleotides
- 
-    return accuracy
+    accuracy_non_padded = matches_non_padded/total_non_padded
+
+    return accuracy, accuracy_non_padded
 
 
 def training_loop(model, trainloader, valloader, loss_class, optimizer,
@@ -80,8 +90,12 @@ def training_loop(model, trainloader, valloader, loss_class, optimizer,
                       epoch, " is", loss.item())
 
         print("Epoch", epoch, "average loss is:", epoch_loss/n)
-        val_accuracy = evaluate(model, valloader, device)
+        val_accuracy, val_accuracy_non_padded = evaluate(model, valloader,
+                                                         device)
         print("Epoch", epoch, " validation accuracy is:", val_accuracy)
-        wandb.log({"loss": epoch_loss/n, "val_accuracy": val_accuracy})
+        print("Epoch", epoch, " non padded validation accuracy is:",
+              val_accuracy_non_padded)
+        wandb.log({"loss": epoch_loss/n, "val_accuracy": val_accuracy,
+                   "val_accuracy_non_padded": val_accuracy_non_padded})
 
     return model

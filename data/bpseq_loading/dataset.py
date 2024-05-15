@@ -106,7 +106,7 @@ class BPSeqDataset(Dataset):
 
                 mask = []
                 for element in embedding_array:
-                    if element != 5:  # token for N
+                    if element != 5 and element != 6:  # token for N
                         mask.append(1)
                     else:
                         mask.append(0)

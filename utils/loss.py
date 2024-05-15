@@ -17,7 +17,7 @@ class Loss:
         predictions = predictions.reshape(-1, predictions.shape[2])
 
         true_sequence = true_sequence[:, 1:]  # remove first element <s>
-        true_sequence = true_sequence - 1
+        true_sequence = true_sequence - 1  # have to remove one, because token 1 corresponds to index 0 in probability
         true_sequence = true_sequence.reshape(-1)
 
         loss = self.criterion(predictions, true_sequence)
