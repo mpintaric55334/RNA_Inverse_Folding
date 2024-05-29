@@ -61,6 +61,7 @@ class BPSeqDataset(Dataset):
         self.matrices = []
         self.sequences = []
         self.masks = []
+        self.true_lengths = []
 
         LONGEST_SEQUENCE = cuttof_size  # decided for computation purposes
         
@@ -88,6 +89,7 @@ class BPSeqDataset(Dataset):
                                              LONGEST_SEQUENCE),
                                             dtype=torch.float32)
                 matrix_size = matrix.shape[0]
+                self.true_lengths.append(matrix_size)
                 padded_matrix[:matrix_size, :matrix_size] = matrix
 
                 padded_matrix = padded_matrix.reshape(1, LONGEST_SEQUENCE,
@@ -106,12 +108,13 @@ class BPSeqDataset(Dataset):
 
                 mask = []
                 for element in embedding_array:
-                    if element != 5 and element != 6:  # token for N
+                    if element != 5 and element != 6:  # token for N and P
                         mask.append(1)
                     else:
                         mask.append(0)
 
                 mask = mask[1:]  # first element is unimportant, since its start token
+                #  maybe leave it in, to calculate loss on final element
                 mask = np.array(mask)
 
                 self.masks.append(mask)
@@ -122,4 +125,4 @@ class BPSeqDataset(Dataset):
 
     def __getitem__(self, idx):
 
-        return self.matrices[idx], self.sequences[idx], self.masks[idx]
+        return self.matrices[idx], self.sequences[idx], self.masks[idx], self.true_lengths[idx]

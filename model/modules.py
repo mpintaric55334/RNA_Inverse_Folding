@@ -1,15 +1,12 @@
-import torch
 import torch.nn as nn
-from torch.nn import functional as F
-import numpy as np
 
 
 class ResNetLayer(nn.Module):
 
     """
-    Basic building block of the resnet model. 
+    Basic building block of the resnet model.
     Consists of two convolution layers,
-    each layer having same dilation,and same kernel size. 
+    each layer having same dilation,and same kernel size.
     After each layer, batchnorm and relu are done.
 
     Arguments:
@@ -82,7 +79,7 @@ class FCLayer(nn.Module):
         super(FCLayer, self).__init__()
         self.flatten = nn.Flatten()
         self.fc1 = nn.Linear(in_features=in_channels * shape_x * shape_y,
-                             out_features=256)
+                             out_features=512)
 
     def forward(self, x):
         x = self.fc1(self.flatten(x))
@@ -90,6 +87,7 @@ class FCLayer(nn.Module):
 
 
 class Encoder(nn.Module):
+
     """
     Encoder(resnet) class.
 
@@ -97,6 +95,7 @@ class Encoder(nn.Module):
         matrix_shape: input matrix shape
 
     """
+
     def __init__(self, in_channels: int = 1, desired_channels: int = 128,
                  matrix_shape: int = 512):
         
@@ -104,7 +103,7 @@ class Encoder(nn.Module):
         self.projection_block = nn.Conv2d(in_channels, desired_channels,
                                           kernel_size=1)
         self.blocks = nn.ModuleList()
-        for i in range(5):
+        for _ in range(5):
             self.blocks.append(ResNetBlock(channels=desired_channels,
                                            kernel_size=3))
             matrix_shape = int(matrix_shape/2)
@@ -117,14 +116,15 @@ class Encoder(nn.Module):
         for block in self.blocks:
             x = block(x)
         return x
-   
+
 
 class DecoderLSTM(nn.Module):
-    def __init__(self, batch_size):
+    def __init__(self, hidden_size):
         super(DecoderLSTM, self).__init__()
-        self.lstm = nn.LSTM(input_size=20, hidden_size=256, batch_first=True)
-        self.fc = nn.Linear(256, 6)  # hidden_size, class number
-        self.embedding = nn.Embedding(7, 20, padding_idx=0)
+        self.lstm = nn.LSTM(input_size=20, hidden_size=hidden_size,
+                            batch_first=True)
+        self.fc = nn.Linear(hidden_size, 6)  # hidden_size, class number
+        self.embedding = nn.Embedding(7, 20, padding_idx=6)
 
     def forward(self, inputs, states):
         embeddings = self.embedding(inputs.long())
